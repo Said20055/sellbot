@@ -107,15 +107,18 @@ async def send_reply_to_user(message: Message, state: FSMContext, bot: Bot):
     user_id = data['user_id']
     order_id = data['order_id']
     
-    # Отправляем сообщение пользователю
+    order_info = f"по заявке №{order_id}" if order_id != 0 else "по вашему обращению"
+
     try:
-        await bot.send_message(
+        # Просто копируем сообщение админа пользователю, каким бы оно ни было,
+        # и прикрепляем к нему клавиатуру для ответа.
+        await message.copy_to(
             chat_id=user_id,
-            text=f"Ответ от администратора по заявке №{order_id}:\n\n"
-                 f"<blockquote>{message.text}</blockquote>",
             reply_markup=reply_to_admin_keyboard(order_id)
         )
+        # Добавляем текстовое подтверждение об отправке
         await message.answer("✅ Ваш ответ успешно отправлен пользователю.")
+
     except Exception as e:
         await message.answer(f"❌ Не удалось отправить сообщение. Ошибка: {e}")
         

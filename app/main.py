@@ -1,6 +1,7 @@
 import asyncio
 import logging
 from aiogram import Bot, Dispatcher, F
+from aiogram.types import BotCommand
 from sqlalchemy.ext.asyncio import async_sessionmaker
 
 from core.config import settings
@@ -14,6 +15,20 @@ async def create_tables():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
+async def set_bot_commands(bot: Bot):
+    """
+    Устанавливает команды для бота в меню Telegram.
+    """
+    commands = [
+        BotCommand(
+            command="start",
+            description="Главное меню 🏠"
+        )
+        # Сюда можно добавить другие команды, если они появятся
+        # BotCommand(command="help", description="Помощь"),
+    ]
+    await bot.set_my_commands(commands)
+    
 async def main():
     # Настройка логирования
     logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(name)s - %(message)s')
@@ -37,6 +52,7 @@ async def main():
     dp.include_router(user_handlers.router)
     dp.include_router(admin_handlers.router)
 
+    await set_bot_commands(bot)
     await bot.delete_webhook(drop_pending_updates=True)
     await dp.start_polling(bot)
 

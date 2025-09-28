@@ -6,12 +6,18 @@ class Repository:
     def __init__(self, session: AsyncSession):
         self.session = session
 
-    async def add_user(self, user_id: int, username: str, first_name: str):
+    async def add_user(self, user_id: int, username: str, first_name: str) -> bool:
+        """
+        Добавляет нового пользователя в БД.
+        Возвращает True, если пользователь новый, иначе False.
+        """
         user_exists = await self.session.get(User, user_id)
         if not user_exists:
             new_user = User(user_id=user_id, username=username, first_name=first_name)
             self.session.add(new_user)
             await self.session.commit()
+            return True # Пользователь был новым
+        return False # Пользователь уже существовал
 
     async def get_all_products(self):
         query = select(Product)

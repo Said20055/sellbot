@@ -3,6 +3,7 @@ from aiogram import Router, F, Bot
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
 from aiogram.types import CallbackQuery, Message
+from aiogram.enums import ContentType
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.models import Product
@@ -110,25 +111,30 @@ async def send_reply_to_admin(message: Message, state: FSMContext, bot: Bot):
     order_id = data['order_id']
     user = message.from_user
     
-    admin_text = (f"💬 Сообщение от пользователя по заявке №{order_id}\n\n"
-                  f"<b>От:</b> {user.full_name} (@{user.username or 'не указан'})\n"
-                  f"<b>User ID:</b> <code>{user.id}</code>\n\n"
-                  f"<b>Сообщение:</b>\n<blockquote>{message.text}</blockquote>")
-    
+    # Готовим "шапку" с информацией о пользователе
+    info_header = (f"💬 Сообщение от пользователя по заявке №{order_id}\n\n"
+                   f"<b>От:</b> {user.full_name} (@{user.username or 'не указан'})\n"
+                   f"<b>User ID:</b> <code>{user.id}</code>")
+
+    # Создаем клавиатуру для ответа
+    reply_kb = reply_to_user_keyboard(order_id, user.id)
+
+    # Цикл отправки всем администраторам
     for admin_id in settings.ADMIN_LIST:
         try:
-            await bot.send_message(
-                chat_id=admin_id,
-                text=admin_text,
-                reply_markup=reply_to_user_keyboard(order_id, user.id)
-            )
-        except Exception:
-            pass
+            # 1. Сначала отправляем текстовую "шапку" с информацией
+            await bot.send_message(chat_id=admin_id, text=info_header)
+            
+            # 2. Затем копируем ОРИГИНАЛЬНОЕ сообщение пользователя (любого типа)
+            #    и прикрепляем к нему клавиатуру для ответа.
+            await message.copy_to(chat_id=admin_id, reply_markup=reply_kb)
 
+        except Exception as e:
+            logging.error(f"Не удалось переслать сообщение админу {admin_id}: {e}")
+
+    # Отправляем подтверждение пользователю
     await message.answer(
         "✅ Ваше сообщение отправлено администратору.",
         reply_markup=reply_to_admin_keyboard(order_id)
     )
     await state.clear()
-
-

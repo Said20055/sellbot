@@ -23,6 +23,6 @@ class Order(Base):
     order_id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     user_id: Mapped[int] = mapped_column(ForeignKey('users.user_id'))
     # Убедитесь, что здесь тоже правильный ForeignKey
-    product_id: Mapped[int] = mapped_column(ForeignKey('products.product_id'))
+    product_id: Mapped[int] = mapped_column(ForeignKey('products.product_id', ondelete="CASCADE"))
     status: Mapped[str] = mapped_column(String(50), default='new')
     created_at: Mapped[TIMESTAMP] = mapped_column(TIMESTAMP, server_default=func.now())
