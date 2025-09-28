@@ -4,6 +4,7 @@ from aiogram.types import Message
 from aiogram.filters import CommandStart
 from sqlalchemy.ext.asyncio import AsyncSession
 
+
 from services.repository import Repository
 from keyboards.inline import main_menu_keyboard # <-- Изменили импорт
 from core.config import settings

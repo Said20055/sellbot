@@ -3,6 +3,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
 from aiogram.types import Message, CallbackQuery
 from sqlalchemy.ext.asyncio import AsyncSession
+from aiogram.enums import ContentType
 
 from services.repository import Repository
 from keyboards.inline import admin_panel_keyboard, products_for_delete_keyboard, reply_to_admin_keyboard, reply_to_user_keyboard
@@ -108,15 +109,27 @@ async def send_reply_to_user(message: Message, state: FSMContext, bot: Bot):
     order_id = data['order_id']
     
     order_info = f"по заявке №{order_id}" if order_id != 0 else "по вашему обращению"
+    reply_kb = reply_to_admin_keyboard(order_id)
 
     try:
-        # Просто копируем сообщение админа пользователю, каким бы оно ни было,
-        # и прикрепляем к нему клавиатуру для ответа.
-        await message.copy_to(
-            chat_id=user_id,
-            reply_markup=reply_to_admin_keyboard(order_id)
-        )
-        # Добавляем текстовое подтверждение об отправке
+        # --- НОВАЯ ЛОГИКА IF/ELSE ---
+        # ЕСЛИ АДМИН ОТПРАВИЛ ПРОСТО ТЕКСТ
+        if message.content_type == ContentType.TEXT:
+            # Отправляем ОДНО красивое сообщение
+            text = (f"Ответ от администратора {order_info}:\n\n"
+                    f"<blockquote>{message.text}</blockquote>")
+            await bot.send_message(chat_id=user_id, text=text, reply_markup=reply_kb)
+        
+        # ЕСЛИ АДМИН ОТПРАВИЛ ФАЙЛ
+        else:
+            # Копируем файл, добавляя информацию в подпись к нему
+            caption = f"Ответ от администратора {order_info}\n\n{message.caption or ''}"
+            await message.copy_to(
+                chat_id=user_id,
+                caption=caption,
+                reply_markup=reply_kb
+            )
+
         await message.answer("✅ Ваш ответ успешно отправлен пользователю.")
 
     except Exception as e:

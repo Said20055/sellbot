@@ -111,28 +111,30 @@ async def send_reply_to_admin(message: Message, state: FSMContext, bot: Bot):
     order_id = data['order_id']
     user = message.from_user
     
-    # Готовим "шапку" с информацией о пользователе
     info_header = (f"💬 Сообщение от пользователя по заявке №{order_id}\n\n"
                    f"<b>От:</b> {user.full_name} (@{user.username or 'не указан'})\n"
                    f"<b>User ID:</b> <code>{user.id}</code>")
 
-    # Создаем клавиатуру для ответа
     reply_kb = reply_to_user_keyboard(order_id, user.id)
 
-    # Цикл отправки всем администраторам
     for admin_id in settings.ADMIN_LIST:
         try:
-            # 1. Сначала отправляем текстовую "шапку" с информацией
-            await bot.send_message(chat_id=admin_id, text=info_header)
+            # --- НОВАЯ ЛОГИКА IF/ELSE ---
+            # ЕСЛИ СООБЩЕНИЕ - ЭТО ПРОСТО ТЕКСТ
+            if message.content_type == ContentType.TEXT:
+                # Отправляем ОДНО комбинированное сообщение
+                full_text = f"{info_header}\n\n<b>Сообщение:</b>\n<blockquote>{message.text}</blockquote>"
+                await bot.send_message(chat_id=admin_id, text=full_text, reply_markup=reply_kb)
             
-            # 2. Затем копируем ОРИГИНАЛЬНОЕ сообщение пользователя (любого типа)
-            #    и прикрепляем к нему клавиатуру для ответа.
-            await message.copy_to(chat_id=admin_id, reply_markup=reply_kb)
+            # ЕСЛИ СООБЩЕНИЕ - ЭТО ФОТО, ДОКУМЕНТ, ВИДЕО И Т.Д.
+            else:
+                # Отправляем ДВА сообщения: сначала "шапку", потом сам файл
+                await bot.send_message(chat_id=admin_id, text=info_header)
+                await message.copy_to(chat_id=admin_id, reply_markup=reply_kb)
 
         except Exception as e:
             logging.error(f"Не удалось переслать сообщение админу {admin_id}: {e}")
 
-    # Отправляем подтверждение пользователю
     await message.answer(
         "✅ Ваше сообщение отправлено администратору.",
         reply_markup=reply_to_admin_keyboard(order_id)
