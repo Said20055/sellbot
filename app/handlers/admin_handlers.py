@@ -26,10 +26,21 @@ class ReplyToUser(StatesGroup):
 
 @router.callback_query(F.data == "admin_panel")
 async def admin_panel(callback: CallbackQuery):
-    await callback.message.edit_text(
+    # Пытаемся удалить старое сообщение (например, с фото)
+    try:
+        await callback.message.delete()
+    except Exception as e:
+        print(f"Не удалось удалить сообщение: {e}")
+
+    # Отправляем новое сообщение
+    await callback.message.answer(
         "Вы в админ-панели. Выберите действие:",
         reply_markup=admin_panel_keyboard()
     )
+
+    # Закрываем "часики ожидания" у пользователя
+    await callback.answer()
+
 
 # --- Логика добавления товара ---
 

@@ -6,7 +6,7 @@ class Repository:
     def __init__(self, session: AsyncSession):
         self.session = session
 
-    async def add_user(self, user_id: int, username: str, first_name: str) -> bool:
+    async def add_user(self, user_id: int, username: str, first_name: str):
         """
         Добавляет нового пользователя в БД.
         Возвращает True, если пользователь новый, иначе False.

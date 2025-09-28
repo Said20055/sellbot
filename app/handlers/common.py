@@ -2,12 +2,13 @@ import logging
 from aiogram import Router, Bot, F
 from aiogram.types import Message
 from aiogram.filters import CommandStart
+from services.texts import WELCOME_TEXT
 from sqlalchemy.ext.asyncio import AsyncSession
 
 
 from services.repository import Repository
 from keyboards.inline import main_menu_keyboard # <-- Изменили импорт
-from core.config import settings
+from core.config import Settings, settings
 
 router = Router()
 
@@ -37,28 +38,17 @@ async def cmd_start(message: Message, session: AsyncSession, bot):
                 pass
 
         # Приветственное фото
-        await bot.send_photo(
-            chat_id=user.id,
-            photo="AgACAgIAAxkBAAIBqWjY1ZnYG7tq6Qkc9H3zbDgenuYiAALI9TEb_zfJStPgQ55vrvuBAQADAgADeAADNgQ",
-            caption="""<b>✨ Добро пожаловать в MagicShop! ✨</b>
+    await send_welcome(message.from_user.id, bot, settings)
+    return 
 
-Здесь вы найдете качественные товары по отличным ценам 🎁💎.
-Если у вас возникнут вопросы — просто напишите нам, мы всегда готовы помочь 💬🤝"""
-        )
 
-        # Кнопки главного меню
-        await message.answer(
-            text="<i>Для начала выберите действие в меню ниже</i> ⬇️\n\n<b>Приятных покупок!</b> 🛍️🎉",
-            reply_markup=main_menu_keyboard(user.id, settings.ADMIN_LIST)
-        )
-        return
-
-    # Если пользователь уже существует
-    await message.answer(
-        text="""Вы находитесь в <b>главном меню</b> 🏠.  
-Выберите нужное действие с помощью кнопок ниже ⬇️""",
-        reply_markup=main_menu_keyboard(user.id, settings.ADMIN_LIST)
+async def send_welcome(user_id: int, bot: Bot, settings: Settings):
+    await bot.send_photo(
+        chat_id=user_id,
+        photo="AgACAgIAAxkBAAIBqWjY1ZnYG7tq6Qkc9H3zbDgenuYiAALI9TEb_zfJStPgQ55vrvuBAQADAgADeAADNgQ",
+        caption=WELCOME_TEXT,
+        reply_markup=main_menu_keyboard(user_id, settings.ADMIN_LIST)
     )
-        
-        
+    return
+
 

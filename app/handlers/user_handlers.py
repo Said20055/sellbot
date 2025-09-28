@@ -6,11 +6,12 @@ from aiogram.types import CallbackQuery, Message
 from aiogram.enums import ContentType
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from handlers.common import send_welcome
+from services.texts import WELCOME_TEXT
 from models.models import Product
 from services.repository import Repository
 # --- ОБНОВЛЯЕМ ИМПОРТЫ КЛАВИАТУР ---
 from keyboards.inline import (
-    main_menu_keyboard,
     product_list_keyboard,
     reply_to_user_keyboard,
     reply_to_admin_keyboard
@@ -28,19 +29,34 @@ class ReplyToAdmin(StatesGroup):
 # --- НАВИГАЦИЯ ПО МЕНЮ ---
 
 @router.callback_query(F.data == "back_to_main_menu")
-async def back_to_main_menu(callback: CallbackQuery):
-    await callback.message.edit_text(
-        "Вы вернулись в главное меню. Выберите действие:",
-        reply_markup=main_menu_keyboard(callback.from_user.id, settings.ADMIN_LIST)
-    )
+async def back_to_main_menu(callback: CallbackQuery, bot: Bot):
+    try:
+        await callback.message.delete()
+    except Exception as e:
+        print(f"Не удалось удалить сообщение: {e}")
+
+    await send_welcome(callback.from_user.id, bot, settings)
+    await callback.answer()
+
 
 @router.callback_query(F.data == "show_products")
 async def show_product_list(callback: CallbackQuery, session: AsyncSession):
     repo = Repository(session)
-    await callback.message.edit_text(
+
+    # Удаляем старое сообщение
+    try:
+        await callback.message.delete()
+    except Exception as e:
+        print(f"Не удалось удалить сообщение: {e}")
+
+    # Отправляем новое сообщение
+    await callback.message.answer(
         "Выберите товар для покупки:",
         reply_markup=await product_list_keyboard(repo)
     )
+
+    # Обязательно подтверждаем callback, чтобы не было "часиков" у пользователя
+    await callback.answer()
 
 
 # --- ЛОГИКА ПОКУПКИ ТОВАРА ---
