@@ -51,3 +51,8 @@ def reply_to_user_keyboard(order_id: int, user_id: int):
 def reply_to_admin_keyboard(order_id: int):
     button = InlineKeyboardButton(text="✍️ Ответить администратору", callback_data=f"reply_admin_{order_id}")
     return InlineKeyboardMarkup(inline_keyboard=[[button]])
+
+def order_user_keyboard(order_id: int):
+    button1 = InlineKeyboardButton(text="❌ Отменить", callback_data="cancel_order_by_user")
+    button2 = InlineKeyboardButton(text="✍️ Написать администратору", callback_data=f"reply_admin_{order_id}")
+    return InlineKeyboardMarkup(inline_keyboard=[[button1], [button2]])

@@ -14,7 +14,8 @@ from services.repository import Repository
 from keyboards.inline import (
     product_list_keyboard,
     reply_to_user_keyboard,
-    reply_to_admin_keyboard
+    reply_to_admin_keyboard,
+    order_user_keyboard
 )
 from core.config import settings
 
@@ -106,8 +107,28 @@ async def create_order(callback: CallbackQuery, session: AsyncSession, bot: Bot)
 
     await callback.message.edit_text(
         text=user_text,
-        reply_markup=reply_to_admin_keyboard(order.order_id)
+        reply_markup=order_user_keyboard(order.order_id)
     )
+
+
+@router.callback_query(F.data.startswith("cancel_order_by_user"))
+async def cancel_order_by_user(callback: CallbackQuery,  bot: Bot):
+    
+    await callback.answer("🚫 Ваша заявка отменена.")
+    await callback.message.delete()
+    await send_welcome(callback.from_user.id, bot, settings)
+    
+    for admin_id in settings.ADMIN_LIST:
+        try:
+            full_text = (f"🚫 <b>Пользователь отменил заявку</b>\n\n"
+                         f"<b>От:</b> {callback.from_user.full_name}\n"
+                         f"<b>Username:</b> @{callback.from_user.username or 'не указан'}\n"
+                         f"<b>User ID:</b> <code>{callback.from_user.id}</code>")
+            
+            await bot.send_message(chat_id=admin_id, text=full_text)
+        except Exception as e:
+            logging.error(f"Не удалось переслать сообщение админу {admin_id}: {e}")
+
 
 # --- Логика ответа администратору ---
 
